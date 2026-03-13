@@ -52,21 +52,26 @@ class AIService
     protected function buildPrompt(Task $task): string
     {
         return "
-        Analyze the following task and provide:
+            You are an AI task assistant.
 
-        1. Short summary (1 sentence)
-        2. Priority level (low, medium, high)
+            Analyze the following task and return ONLY valid JSON.
 
-        Task Title: {$task->title}
+            Task Title: {$task->title}
 
-        Task Description:
-        {$task->description}
+            Task Description:
+            {$task->description}
 
-        Response format JSON:
-        {
-          summary: string,
-          priority: low|medium|high
-        }
+            Return JSON with the following format:
+
+            {
+            \"summary\": \"short one sentence summary\",
+            \"priority\": \"low | medium | high\"
+            }
+
+            Rules:
+            - Only return JSON
+            - Do not include explanation
+            - Do not include markdown
         ";
     }
 

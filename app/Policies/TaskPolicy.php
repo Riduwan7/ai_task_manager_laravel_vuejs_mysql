@@ -28,6 +28,6 @@ class TaskPolicy
      */
     public function delete(User $user, Task $task): bool
     {
-        return $user->is_admin;
+        return $user->id === $task->assigned_to || $user->is_admin;
     }
 }

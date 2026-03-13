@@ -28,7 +28,7 @@
             @endisset
 
             <!-- Page Content -->
-            <main>
+            <main id="vue-app">
                 {{ $slot }}
             </main>
         </div>

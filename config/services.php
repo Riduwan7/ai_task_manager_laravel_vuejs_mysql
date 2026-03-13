@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'mock'),
+    ],
+
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+    ],
+
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+
+    'claude' => [
+        'key' => env('CLAUDE_API_KEY'),
+    ],
+
 ];

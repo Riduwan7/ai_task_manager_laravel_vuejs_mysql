@@ -5,7 +5,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\DashboardController;
 
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -89,4 +88,4 @@ Route::middleware('auth')->group(function () {
         ->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

@@ -6,6 +6,7 @@ use App\Services\TaskService;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Requests\UpdateTaskStatusRequest;
+use App\Models\User;
 use App\Http\Resources\TaskResource;
 use Illuminate\Http\Request;
 
@@ -27,7 +28,21 @@ class TaskController extends Controller
 
         $tasks = $this->taskService->getAllTasks($filters);
 
-        return TaskResource::collection($tasks);
+        $users = User::all();
+        $stats = $this->taskService->getDashboardStats();
+
+        return view('tasks.index', compact('tasks', 'users', 'stats'));
+    }
+
+    /**
+     * Show create task form
+     */
+    public function create()
+    {
+        $users = User::all();
+        $stats = $this->taskService->getDashboardStats();
+
+        return view('tasks.create', compact('users', 'stats'));
     }
 
     /**
@@ -37,7 +52,11 @@ class TaskController extends Controller
     {
         $task = $this->taskService->createTask($request->validated());
 
-        return new TaskResource($task);
+        if ($request->expectsJson()) {
+            return new TaskResource($task);
+        }
+
+        return redirect()->route('tasks.index')->with('success', 'Task created successfully.');
     }
 
     /**
@@ -49,7 +68,24 @@ class TaskController extends Controller
 
         $this->authorize('view', $task);
 
-        return new TaskResource($task);
+        $stats = $this->taskService->getDashboardStats();
+
+        return view('tasks.show', compact('task', 'stats'));
+    }
+
+    /**
+     * Show edit task form
+     */
+    public function edit(int $id)
+    {
+        $task = $this->taskService->getTask($id);
+
+        $this->authorize('update', $task);
+
+        $users = User::all();
+        $stats = $this->taskService->getDashboardStats();
+
+        return view('tasks.edit', compact('task', 'users', 'stats'));
     }
 
     /**
@@ -63,23 +99,27 @@ class TaskController extends Controller
 
         $task = $this->taskService->updateTask($id, $request->validated());
 
-        return new TaskResource($task);
+        if ($request->expectsJson()) {
+            return new TaskResource($task);
+        }
+
+        return redirect()->route('tasks.index')->with('success', 'Task updated successfully.');
     }
 
     /**
      * Delete task
      */
-    public function destroy(int $id)
+    public function destroy(Request $request, int $id)
     {
-        $task = $this->taskService->getTask($id);
-
-        $this->authorize('delete', $task);
-
         $this->taskService->deleteTask($id);
 
-        return response()->json([
-            'message' => 'Task deleted successfully'
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Task deleted successfully'
+            ]);
+        }
+
+        return redirect()->route('tasks.index')->with('success', 'Task deleted successfully.');
     }
 
     /**
@@ -92,7 +132,11 @@ class TaskController extends Controller
             $request->status
         );
 
-        return new TaskResource($task);
+        if ($request->expectsJson()) {
+            return new TaskResource($task);
+        }
+
+        return back()->with('success', 'Status updated successfully.');
     }
 
     /**
@@ -102,6 +146,10 @@ class TaskController extends Controller
     {
         $task = $this->taskService->generateAISummary($id);
 
-        return new TaskResource($task);
+        if (request()->expectsJson()) {
+            return new TaskResource($task);
+        }
+
+        return redirect()->route('tasks.show', $id)->with('success', 'AI Summary generated successfully.');
     }
 }

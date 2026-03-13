@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+use App\Models\User;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 
@@ -24,47 +27,61 @@ class Task extends Model
         'due_date',
         'assigned_to',
         'ai_summary',
-        'ai_priority'
+        'ai_priority',
     ];
 
     /**
-     * Type casting
+     * Attribute casting
+     * ✅ Fixed: changed from method to property
+     * protected function casts() caused "undefined cast" error
      */
     protected $casts = [
         'priority' => TaskPriority::class,
-        'status' => TaskStatus::class,
+        'status'   => TaskStatus::class,
         'due_date' => 'date',
     ];
 
-    public function user()
+    /**
+     * Assigned user relationship
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
-    public function scopeFilter(Builder $query, array $filters)
+    /**
+     * Filter scope
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
-        if (isset($filters['status'])) {
+        if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (isset($filters['priority'])) {
+        if (!empty($filters['priority'])) {
             $query->where('priority', $filters['priority']);
         }
 
-        if (isset($filters['assigned_to'])) {
+        if (!empty($filters['assigned_to'])) {
             $query->where('assigned_to', $filters['assigned_to']);
         }
 
         return $query;
     }
 
+    /**
+     * Check if task completed
+     */
     public function isCompleted(): bool
     {
-        return $this->status === 'completed';
+        return $this->status === TaskStatus::COMPLETED;
     }
 
+    /**
+     * Check if task high priority
+     */
     public function isHighPriority(): bool
     {
-        return $this->priority === 'high';
+        return $this->priority === TaskPriority::HIGH;
     }
 }

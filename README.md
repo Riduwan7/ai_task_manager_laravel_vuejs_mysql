@@ -1,59 +1,75 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AI Task Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A production-ready Task Management System using Laravel 11. It features a clean architecture, Repository Pattern, and AI integration for automated task summaries and priority analysis.
 
-## About Laravel
+## Features
+- **Clean Architecture:** Uses Repositories and Services to keep controllers thin.
+- **AI Integration:** Automatically processes task summaries using an AI Service (Queued Job).
+- **Authentication:** Role-based access (Admin/User).
+- **Tailwind CSS UI:** Styled components matching the requested UI details.
+- **Docker Support:** Ready to run via Laravel Sail.
+- **Automated Tests:** Feature tests added for critical Task workflows.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Architecture
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The application adheres to clean architecture principles:
+1. **Controllers:** Only handle HTTP requests, responses, and validation layers.
+2. **Services (`App\Services`):** The business logic layer. Handles transactions, triggers external APIs, and calls Repositories.
+3. **Repositories (`App\Repositories`):** The data access layer. Abstracts Eloquent queries following the `TaskRepositoryInterface`. Controllers cannot make direct Eloquent calls.
+4. **Policies (`App\Policies`):** Handles authorization rules (e.g., users can only view/edit tasks assigned to them).
+5. **Enums (`App\Enums`):** Strongly typed definition for Priorities and Statuses.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## AI Implementation details
 
-## Learning Laravel
+The AI is integrated via background queues to prevent slowing down the HTTP request during task creation.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+**Flow:**
+1. A new Task is created.
+2. The `ProcessAITaskSummary` Job is dispatched to the background queue.
+3. Once the queue worker processes the job, the `AIService` parses the task data and triggers the selected LLM provider API (OpenAI / Gemini / Claude) based on configurations with a fallback mock service.
+4. The requested Prompt is:
+   ```text
+   Analyze the following task and provide:
+   1. Short summary (1 sentence)
+   2. Priority level (low, medium, high)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+   Task Title: {task_title}
+   Task Description: {task_description}
 
-## Laravel Sponsors
+   Response format JSON:
+   {
+       "summary": "string",
+       "priority": "low|medium|high"
+   }
+   ```
+5. The `AIService` parses the JSON response, validates it, and updates `ai_summary` and `ai_priority` on the Task model.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Setup Instructions
 
-### Premium Partners
+### Docker Setup
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+1. Copy `.env.example` to `.env` and set DB details and AI keys.
+2. Run Laravel sail via Docker:
+```bash
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate --seed
+./vendor/bin/sail npm install
+./vendor/bin/sail npm run dev
+```
 
-## Contributing
+### Local Setup
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1. Copy `.env.example` to `.env`
+2. Run `composer install`
+3. Run `npm install && npm run build`
+4. Run `php artisan key:generate`
+5. Run `php artisan migrate --seed`
+6. Run `php artisan serve` and `php artisan queue:work` to parse async AI task summaries.
 
-## Code of Conduct
+### Testing
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Run the feature tests via artisan or Sail:
+```bash
+php artisan test
+```
